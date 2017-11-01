@@ -26,7 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var defaultCCProxyURL = "unix:///run/cc-oci-runtime/proxy.sock"
+var defaultCCProxyURL = "unix:///var/run/clear-containers/proxy.sock"
 
 const (
 	// Number of seconds to wait for the proxy to respond to a connection
@@ -132,12 +132,7 @@ func (p *ccProxy) register(pod Pod) ([]ProxyInfo, string, error) {
 	var err error
 	var proxyInfos []ProxyInfo
 
-	ccConfig, ok := newProxyConfig(*(pod.config)).(CCProxyConfig)
-	if !ok {
-		return []ProxyInfo{}, "", fmt.Errorf("Wrong proxy config type, should be CCProxyConfig type")
-	}
-
-	p.client, err = p.connectProxy(ccConfig.URL)
+	p.client, err = p.connectProxy(fmt.Sprintf("unix:///var/run/clear-containers/proxy-%s.sock", pod.id))
 	if err != nil {
 		return []ProxyInfo{}, "", err
 	}
@@ -193,12 +188,7 @@ func (p *ccProxy) unregister(pod Pod) error {
 func (p *ccProxy) connect(pod Pod, createToken bool) (ProxyInfo, string, error) {
 	var err error
 
-	ccConfig, ok := newProxyConfig(*(pod.config)).(CCProxyConfig)
-	if !ok {
-		return ProxyInfo{}, "", fmt.Errorf("Wrong proxy config type, should be CCProxyConfig type")
-	}
-
-	p.client, err = p.connectProxy(ccConfig.URL)
+	p.client, err = p.connectProxy(fmt.Sprintf("unix:///var/run/clear-containers/proxy-%s.sock", pod.id))
 	if err != nil {
 		return ProxyInfo{}, "", err
 	}

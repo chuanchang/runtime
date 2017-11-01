@@ -19,6 +19,7 @@ package virtcontainers
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -750,6 +751,22 @@ func (p *Pod) startVM(netNsPath string) error {
 
 	l.Info("VM started")
 
+	if err := startProxy("/usr/libexec/clear-containers/cc-proxy", fmt.Sprintf("/var/run/clear-containers/proxy-%s.sock", p.id)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func startProxy(bin string, uri string) error {
+	args := []string{"-uri", uri, "-log", "debug"}
+	cmd := exec.Command(bin, args...)
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	time.Sleep(time.Second)
+
 	return nil
 }
 
@@ -917,9 +934,7 @@ func (p *Pod) stopVM() error {
 		return err
 	}
 
-	if err := p.proxy.disconnect(); err != nil {
-		return err
-	}
+	p.proxy.disconnect()
 
 	if err := p.hypervisor.stopPod(); err != nil {
 		return err
